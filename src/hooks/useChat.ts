@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-
 import { sanitizeInput } from '../utils/sanitize';
 import { trackChatMessage } from '../utils/analytics';
 import { useRateLimit } from './useRateLimit';
@@ -25,12 +24,10 @@ export const useChat = (): UseChatReturn => {
   const [error, setError] = useState<string | null>(null);
   const rateLimit = useRateLimit();
 
-  // Debounce guard — prevents double-sends from rapid keypresses
   const lastSendTime = useRef(0);
 
   const sendMessage = useCallback(
     async (rawText: string): Promise<void> => {
-      // Debounce: ignore calls within 300 ms of the last one
       const now = Date.now();
       if (now - lastSendTime.current < 300) return;
       lastSendTime.current = now;
@@ -38,7 +35,6 @@ export const useChat = (): UseChatReturn => {
       const text = sanitizeInput(rawText);
       if (!text || isLoading) return;
 
-      // Rate limit check
       const allowed = rateLimit.recordCall();
       if (!allowed) {
         setError(
@@ -71,8 +67,11 @@ export const useChat = (): UseChatReturn => {
       trackChatMessage();
 
       try {
-        const apiKey = import.meta.env.VITE_GROQ_API_KEY ?? '';
-        if (!apiKey) throw new Error('No API Key');
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+        
+        if (!apiKey) {
+          throw new Error('API Key is missing. Please add VITE_GROQ_API_KEY to your .env file and RESTART the dev server.');
+        }
 
         const chatMessages = [
           { role: 'system', content: CHAT_SYSTEM_PROMPT },
@@ -87,33 +86,48 @@ export const useChat = (): UseChatReturn => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${apiKey.trim()}`,
           },
           body: JSON.stringify({
             model: 'llama3-8b-8192',
             messages: chatMessages,
             stream: true,
+            temperature: 0.7,
+            max_tokens: 1024,
           }),
         });
 
-        if (!response.ok) throw new Error('Network response was not ok');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Groq API Error Response:', errorData);
+          throw new Error(errorData.error?.message || `Groq API Error: ${response.status} ${response.statusText}`);
+        }
 
         const reader = response.body?.getReader();
+        if (!reader) throw new Error('Failed to open response stream');
+        
         const decoder = new TextDecoder('utf-8');
         let fullText = '';
+        let buffer = '';
 
-        while (reader) {
+        while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep the last partial line in the buffer
+
           for (const line of lines) {
-            if (line.includes('[DONE]')) break;
-            if (line.startsWith('data: ')) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine || trimmedLine === 'data: [DONE]') continue;
+            
+            if (trimmedLine.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.replace(/^data: /, ''));
-                if (data.choices[0].delta.content) {
-                  fullText += data.choices[0].delta.content;
+                const data = JSON.parse(trimmedLine.substring(6));
+                const content = data.choices[0]?.delta?.content || '';
+                if (content) {
+                  fullText += content;
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === assistantId ? { ...m, content: fullText } : m
@@ -121,7 +135,7 @@ export const useChat = (): UseChatReturn => {
                   );
                 }
               } catch (e) {
-                console.error('Error parsing stream data', e);
+                console.warn('Skipping partial/invalid JSON line:', trimmedLine);
               }
             }
           }
@@ -132,18 +146,20 @@ export const useChat = (): UseChatReturn => {
             m.id === assistantId ? { ...m, streaming: false } : m
           )
         );
-      } catch (e) {
-        console.error(e);
-        const errMsg =
-          'Unable to connect to the AI service. Please verify your VITE_GROQ_API_KEY is configured in .env';
+      } catch (e: any) {
+        console.error('Chat Assistant Error:', e);
+        const errorMessage = e.name === 'TypeError' && e.message === 'Failed to fetch' 
+          ? 'Network Error: Check your connection or CORS settings. Groq might be unreachable.'
+          : e.message || 'An unexpected error occurred.';
+          
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: errMsg, streaming: false }
+              ? { ...m, content: `⚠️ Error: ${errorMessage}`, streaming: false }
               : m
           )
         );
-        setError(errMsg);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }

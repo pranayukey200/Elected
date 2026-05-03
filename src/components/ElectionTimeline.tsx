@@ -22,20 +22,22 @@ const ElectionTimeline: React.FC = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const track = trackRef.current!;
-      const totalScroll = track.scrollWidth - track.offsetWidth;
+      if (!trackRef.current || !containerRef.current) return;
+
+      const track = trackRef.current;
+      const getScrollAmount = () => track.scrollWidth - window.innerWidth;
 
       gsap.to(track, {
-        x: -totalScroll,
+        x: () => -getScrollAmount(),
         ease: 'none',
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: () => `+=${totalScroll}`,
+          end: () => `+=${getScrollAmount()}`,
           pin: true,
-          scrub: 1.2,
-          anticipatePin: 1,
+          scrub: 1,
           invalidateOnRefresh: true,
+          markers: false, // Explicitly false
           onUpdate: (self) => {
             if (progressRef.current) {
               progressRef.current.style.width = `${self.progress * 100}%`;
@@ -45,11 +47,21 @@ const ElectionTimeline: React.FC = () => {
       });
     }, containerRef);
 
-    return () => ctx.revert(); // full cleanup on unmount
+    return () => ctx.revert();
   }, []);
 
   return (
-    <section ref={containerRef} style={{ position: 'relative', height: '100vh', overflow: 'hidden', background: '#05050A' }}>
+    <section 
+      id="timeline" 
+      ref={containerRef} 
+      style={{ 
+        position: 'relative', 
+        height: '100vh', 
+        overflow: 'hidden', 
+        background: '#05050A',
+        whiteSpace: 'nowrap'
+      }}
+    >
       <div style={{ position: 'absolute', top: '10vh', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: 10 }}>
         <p style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: '8px' }}>
           Scroll to explore
@@ -62,20 +74,20 @@ const ElectionTimeline: React.FC = () => {
       <div 
         ref={trackRef} 
         style={{ 
-          position: 'absolute', 
-          top: '50%', 
-          transform: 'translateY(-50%)', 
-          display: 'flex', 
-          gap: '24px', 
-          paddingLeft: '15vw', 
-          paddingRight: '15vw',
-          willChange: 'transform' 
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          alignItems: 'center',
+          width: 'max-content',
+          gap: '24px',
+          padding: '0 15vw',
+          height: '100%',
+          willChange: 'transform',
         }}
       >
         {steps.map((step) => (
           <div 
             key={step.num}
-            className="group"
             style={{
               position: 'relative',
               flexShrink: 0,
@@ -91,16 +103,7 @@ const ElectionTimeline: React.FC = () => {
               justifyContent: 'space-between',
               transition: 'all 0.5s ease',
               cursor: 'default',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)';
-              e.currentTarget.style.boxShadow = '0 0 40px rgba(37,99,235,0.2)';
-              (e.currentTarget.lastChild as HTMLElement).style.color = 'rgba(255,255,255,0.08)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.boxShadow = 'none';
-              (e.currentTarget.lastChild as HTMLElement).style.color = 'rgba(255,255,255,0.05)';
+              whiteSpace: 'normal'
             }}
           >
             <div>
@@ -118,7 +121,6 @@ const ElectionTimeline: React.FC = () => {
                 position: 'absolute', 
                 bottom: '16px', 
                 right: '24px',
-                transition: 'color 0.3s ease'
               }}
             >
               {step.num}
@@ -127,7 +129,6 @@ const ElectionTimeline: React.FC = () => {
         ))}
       </div>
 
-      {/* Progress bar */}
       <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)', width: '192px', height: '2px', background: 'rgba(255,255,255,0.1)', borderRadius: '9999px' }}>
         <div ref={progressRef} style={{ height: '100%', background: '#2563EB', borderRadius: '9999px', width: '0%', transition: 'none' }} />
       </div>

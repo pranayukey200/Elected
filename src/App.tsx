@@ -1,6 +1,7 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import './index.css';
+import { logFirebaseEvent } from './lib/firebase';
 
 // ── Eager (above-the-fold) ────────────────────────────────────────────────────
 import ParticleField from './components/ParticleField';
@@ -44,6 +45,11 @@ const SectionFallback: React.FC = () => (
 );
 
 const App: React.FC = () => {
+  // [Google Services] Track page view on load via Firebase Analytics
+  useEffect(() => {
+    logFirebaseEvent('page_view', { page_title: 'ElectED Home', page_location: window.location.href });
+  }, []);
+
   return (
     <LazyMotion features={domAnimation} strict>
       {/* Skip-to-content for keyboard / screen reader users */}

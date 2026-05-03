@@ -1,6 +1,29 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// ── Mock GSAP (ScrollTrigger requires real browser DOM) ────────────────────────
+vi.mock('gsap', () => ({
+  default: {
+    registerPlugin: vi.fn(),
+    to: vi.fn(),
+    from: vi.fn(),
+    set: vi.fn(),
+    timeline: vi.fn(() => ({ to: vi.fn(), from: vi.fn(), fromTo: vi.fn() })),
+    context: vi.fn((fn: () => void) => { fn(); return { revert: vi.fn() }; }),
+  },
+  ScrollTrigger: { create: vi.fn(), refresh: vi.fn(), kill: vi.fn() },
+  gsap: {
+    registerPlugin: vi.fn(),
+    to: vi.fn(),
+    from: vi.fn(),
+    set: vi.fn(),
+    context: vi.fn((fn: () => void) => { fn(); return { revert: vi.fn() }; }),
+  },
+}));
+vi.mock('gsap/ScrollTrigger', () => ({
+  ScrollTrigger: { create: vi.fn(), refresh: vi.fn(), kill: vi.fn() },
+}));
+
 // ── Mock matchMedia (not available in jsdom) ─────────────────────────────────
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -85,3 +108,23 @@ vi.mock('framer-motion', async () => {
 // ── Mock scrollIntoView ───────────────────────────────────────────────────────
 Element.prototype.scrollIntoView = vi.fn();
 
+// ── Mock Firebase to prevent real network calls in tests ─────────────────────
+vi.mock('../lib/firebase', () => ({
+  logFirebaseEvent: vi.fn(),
+  app: {},
+  analytics: null,
+  perf: null,
+}));
+
+// ── Mock Leaflet to prevent DOM errors in tests ───────────────────────────────
+vi.mock('leaflet', () => ({
+  default: {
+    map: vi.fn(() => ({
+      setView: vi.fn(), on: vi.fn(), remove: vi.fn(), flyTo: vi.fn(),
+      getZoom: vi.fn(() => 2), addLayer: vi.fn(),
+    })),
+    tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
+    divIcon: vi.fn(() => ({})),
+    marker: vi.fn(() => ({ addTo: vi.fn(), on: vi.fn() })),
+  },
+}));

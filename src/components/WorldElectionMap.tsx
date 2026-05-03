@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { logFirebaseEvent } from '../lib/firebase';
+import { announce } from '../hooks/useAccessibility';
 
 const COUNTRIES = [
   { name:"India", lat:20.59, lng:78.96, flag:"🇮🇳", status:"concluded", year:2024, leader:"Narendra Modi", title:"Prime Minister", party:"BJP", voters:"969 Million", turnout:"66.3%" },
@@ -78,6 +80,10 @@ export default function WorldElectionMap() {
         spinning = false;
         setSelected(c);
         map.flyTo([c.lat, c.lng], 4);
+        // [Google Services] Fire Firebase Analytics event
+        logFirebaseEvent('map_marker_click', { country: c.name, status: c.status, year: c.year });
+        // [Accessibility] Announce to screen readers
+        announce(`Showing election data for ${c.name}. ${c.status === 'ongoing' ? 'Ongoing' : 'Concluded'} election in ${c.year}.`);
       });
     });
 

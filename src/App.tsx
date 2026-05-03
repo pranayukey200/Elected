@@ -11,7 +11,7 @@ import { MagneticCursor } from './components/MagneticCursor';
 // ── Lazy (below-the-fold) ─────────────────────────────────────────────────────
 const ElectionTimeline = lazy(() => import('./components/ElectionTimeline'));
 const StatsSection = lazy(() => import('./components/StatsSection'));
-const WorldElectionMap = lazy(() => import('./components/WorldElectionMap'));
+import WorldElectionMap from './components/WorldElectionMap';
 const PhotoGallerySection = lazy(() => import('./components/PhotoGallerySection'));
 const FAQSection = lazy(() =>
   import('./components/Footer').then((mod) => ({ default: mod.FAQSection }))
@@ -115,9 +115,7 @@ const App: React.FC = () => {
               <StatsSection />
             </Suspense>
 
-            <Suspense fallback={<SectionFallback />}>
-              <WorldElectionMap />
-            </Suspense>
+            <WorldElectionMap />
 
             <Suspense fallback={<SectionFallback />}>
               <PhotoGallerySection />

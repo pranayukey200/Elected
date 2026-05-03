@@ -73,7 +73,7 @@ export const ReadinessQuiz: React.FC<{ onClose: () => void }> = ({ onClose }) =>
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'llama3-8b-8192',
+          model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
         }),
       });

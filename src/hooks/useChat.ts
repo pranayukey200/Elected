@@ -89,7 +89,7 @@ export const useChat = (): UseChatReturn => {
             'Authorization': `Bearer ${apiKey.trim()}`,
           },
           body: JSON.stringify({
-            model: 'llama3-8b-8192',
+            model: 'llama-3.3-70b-versatile',
             messages: chatMessages,
             stream: true,
             temperature: 0.7,

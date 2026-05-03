@@ -265,3 +265,12 @@ body::after {
     scroll-behavior: auto !important;
   }
 }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 16px currentColor; }
+  50% { transform: scale(1.2); box-shadow: 0 0 32px currentColor; }
+}
+
+.pulse-marker {
+  animation: pulse 2s ease-in-out infinite;
+}

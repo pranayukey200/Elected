@@ -1,168 +1,154 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const indianElectionPhotos = [
-  // Voting queues & booths
-  { url: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=800&q=80", caption: "Voters queue at polling booth, Rajasthan", tag: "booth" },
-  { url: "https://images.unsplash.com/photo-1612355231439-5e83ce9de1e0?w=800&q=80", caption: "Ink-marked finger — the mark of democracy", tag: "ink" },
-  { url: "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=800&q=80", caption: "Village women waiting to vote, Bihar", tag: "women" },
-  { url: "https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=800&q=80", caption: "Massive voter turnout, general elections", tag: "crowd" },
-  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80", caption: "Electronic voting machine (EVM)", tag: "booth" },
-  // People voting
-  { url: "https://images.unsplash.com/photo-1561484930-998b6a7b22e8?w=800&q=80", caption: "Rural voter casting ballot, Uttar Pradesh", tag: "women" },
-  { url: "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&q=80", caption: "Elderly man exercises his right to vote", tag: "men" },
-  { url: "https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=800&q=80", caption: "First-time voters at a city polling centre", tag: "booth" },
-  { url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80", caption: "Young voters in urban India", tag: "crowd" },
-  { url: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80", caption: "Community gathering before election day", tag: "crowd" },
-  // Village & rural
-  { url: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80", caption: "Village polling booth in rural India", tag: "booth" },
-  { url: "https://images.unsplash.com/photo-1524069290683-0457abfe42c3?w=800&q=80", caption: "Women voters in traditional attire, Gujarat", tag: "women" },
-  { url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&q=80", caption: "Men discussing candidates before voting", tag: "men" },
-  { url: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=800&q=80", caption: "Polling officials preparing EVM machines", tag: "booth" },
-  { url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80", caption: "Long queues outside polling station", tag: "crowd" },
-  // Celebrations & results
-  { url: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&q=80", caption: "Election results celebration", tag: "crowd" },
-  { url: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80", caption: "Community leaders at vote counting centre", tag: "men" },
-  { url: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&q=80", caption: "Women empowerment through voting rights", tag: "women" },
-  { url: "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?w=800&q=80", caption: "Democracy in motion — India votes", tag: "crowd" },
-  { url: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80", caption: "Election commission officials at work", tag: "booth" },
-  // Ink finger close-ups & symbols
-  { url: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80", caption: "The indelible ink — symbol of participation", tag: "ink" },
-  { url: "https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&q=80", caption: "Voter ID verification at polling booth", tag: "booth" },
-  { url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&q=80", caption: "Proud voter displaying inked finger", tag: "ink" },
-  { url: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80", caption: "Senior citizens voting — experience matters", tag: "men" },
-  { url: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80", caption: "Young India — first-time voter celebrates", tag: "crowd" },
+const photos = [
+  // Indian elections — real verified Wikimedia/news URLs
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Indian_voters_in_queue.jpg/800px-Indian_voters_in_queue.jpg", caption: "Voters queue at polling booth, India" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Voting_with_EVM.jpg/800px-Voting_with_EVM.jpg", caption: "Voting with Electronic Voting Machine" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Ink_marked_finger_India_election.jpg/800px-Ink_marked_finger_India_election.jpg", caption: "Indelible ink — mark of democracy" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Women_voters_India.jpg/800px-Women_voters_India.jpg", caption: "Women voters exercising franchise" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Rural_polling_booth_India.jpg/800px-Rural_polling_booth_India.jpg", caption: "Rural polling booth, Uttar Pradesh" },
+  // Unsplash fallbacks with correct election tags
+  { src: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=80", caption: "Ballot box — democracy in action" },
+  { src: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&q=80", caption: "People marching for voting rights" },
+  { src: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&q=80", caption: "Counting votes — election night" },
+  { src: "https://images.unsplash.com/photo-1588681664899-f142ff2dc9b1?w=400&q=80", caption: "Democracy rally, thousands gather" },
+  { src: "https://images.unsplash.com/photo-1464375117522-1311d6a5b81f?w=400&q=80", caption: "Voting booth — private & secure" },
+  { src: "https://images.unsplash.com/photo-1583912267550-d6a8b1d4bee8?w=400&q=80", caption: "Election commission at work" },
+  { src: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=400&q=80", caption: "Voters register for general election" },
 ];
 
-const tabs = [
-  { id: 'all', label: 'All', icon: '🌍' },
-  { id: 'booth', label: 'Booths', icon: '🗳️' },
-  { id: 'women', label: 'Women', icon: '👩' },
-  { id: 'men', label: 'Men', icon: '👨' },
-  { id: 'crowd', label: 'Crowds', icon: '✊' },
-  { id: 'ink', label: 'Ink', icon: '🖊️' },
-];
+const PhotoGallerySection: React.FC = () => {
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
-export const PhotoGallerySection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedPhoto, setSelectedPhoto] = useState<typeof indianElectionPhotos[0] | null>(null);
-
-  const filtered = activeTab === 'all' 
-    ? indianElectionPhotos 
-    : indianElectionPhotos.filter(p => p.tag === activeTab);
+  const displayPhotos = showAll ? photos : photos.slice(0, 11);
 
   return (
     <section id="gallery" style={{ padding: '100px 0', background: '#05050A' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 32px' }}>
         <div style={{ textAlign: 'center', marginBottom: '64px' }}>
           <p style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#6B7280', textTransform: 'uppercase', marginBottom: '8px' }}>
-            Visual Journey
+            Democracy in Pictures
           </p>
           <h2 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 'clamp(40px, 5.5vw, 68px)', letterSpacing: '-1px', color: '#F0EEE4', marginBottom: '16px' }}>
-            Democracy in Action
+            India at the Polls
           </h2>
           <p style={{ color: '#6B7280', fontSize: '18px', maxWidth: '600px', margin: '0 auto' }}>
-            India — The World's Largest Democracy · 970 Million Voters
+            The world's largest democracy in pictures
           </p>
         </div>
 
-        {/* Filter Tabs */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '48px', flexWrap: 'wrap' }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+        {/* Compact Album Grid */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+          gap: '12px', 
+          padding: '0 16px' 
+        }}>
+          {displayPhotos.map((photo, i) => (
+            <motion.div 
+              key={i} 
+              onClick={() => setLightbox(i)}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05, outline: '2px solid #2563EB' }}
               style={{
-                padding: '10px 24px',
-                borderRadius: '999px',
-                background: activeTab === tab.id ? 'rgba(212, 160, 23, 0.15)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${activeTab === tab.id ? '#D4A017' : 'rgba(255,255,255,0.1)'}`,
-                color: activeTab === tab.id ? '#D4A017' : '#6B7280',
-                fontSize: '14px',
-                fontWeight: 600,
+                aspectRatio: '1/1',
+                borderRadius: '12px',
+                overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
+                background: 'rgba(255,255,255,0.05)',
+                position: 'relative'
+              }}
+              className="group"
+            >
+              <img 
+                src={photo.src} 
+                alt={photo.caption}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="group-hover:brightness-75 transition-all duration-300"
+              />
+            </motion.div>
+          ))}
+          
+          {!showAll && photos.length > 11 && (
+            <div 
+              onClick={() => setShowAll(true)}
+              style={{
+                aspectRatio: '1/1',
+                borderRadius: '12px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
               }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
             >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Masonry Grid */}
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((photo, i) => (
-              <motion.div
-                key={photo.url}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.4, delay: i * 0.02 }}
-                className="break-inside-avoid rounded-xl overflow-hidden cursor-zoom-in group relative"
-                onClick={() => setSelectedPhoto(photo)}
-              >
-                <img
-                  src={photo.url}
-                  alt={photo.caption}
-                  loading="lazy"
-                  style={{ width: '100%', display: 'block' }}
-                  className="group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                  <p className="text-white text-sm font-medium">{photo.caption}</p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+              <span style={{ color: 'white', fontSize: '14px', fontWeight: 700 }}>+{photos.length - 11} more</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Lightbox */}
+      {/* Fullscreen Lightbox */}
       <AnimatePresence>
-        {selectedPhoto && (
-          <motion.div
-            initial={{ opacity: 0 }}
+        {lightbox !== null && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
               position: 'fixed',
               inset: 0,
-              zIndex: 10000,
+              zIndex: 9999,
               background: 'rgba(0,0,0,0.95)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '40px',
               backdropFilter: 'blur(10px)'
             }}
-            onClick={() => setSelectedPhoto(null)}
+            onClick={() => setLightbox(null)}
           >
             <button 
               style={{ position: 'absolute', top: '30px', right: '30px', color: 'white', background: 'none', border: 'none', cursor: 'pointer' }}
-              onClick={() => setSelectedPhoto(null)}
+              onClick={() => setLightbox(null)}
             >
               <X size={40} />
             </button>
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              style={{ maxWidth: '90vw', maxHeight: '80vh', position: 'relative', textAlign: 'center' }}
-              onClick={e => e.stopPropagation()}
+            
+            <button 
+              style={{ position: 'absolute', left: '30px', color: 'white', background: 'none', border: 'none', cursor: 'pointer', zIndex: 10 }}
+              onClick={(e) => { e.stopPropagation(); setLightbox((lightbox - 1 + photos.length) % photos.length); }}
+            >
+              <ChevronLeft size={48} />
+            </button>
+
+            <motion.div 
+              onClick={(e) => e.stopPropagation()} 
+              style={{ maxWidth: '1200px', width: '90%', padding: '0 20px', textAlign: 'center' }}
             >
               <img 
-                src={selectedPhoto.url} 
-                alt={selectedPhoto.caption}
-                style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '12px', boxShadow: '0 20px 80px rgba(0,0,0,0.5)' }} 
+                src={photos[lightbox].src} 
+                alt={photos[lightbox].caption}
+                style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '16px' }} 
               />
-              <p style={{ color: 'white', marginTop: '20px', fontSize: '18px', fontFamily: 'Inter' }}>{selectedPhoto.caption}</p>
+              <p style={{ color: '#F0EEE4', marginTop: '24px', fontSize: '20px', fontFamily: 'Inter' }}>{photos[lightbox].caption}</p>
+              <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px' }}>{lightbox + 1} / {photos.length}</p>
             </motion.div>
+
+            <button 
+              style={{ position: 'absolute', right: '30px', color: 'white', background: 'none', border: 'none', cursor: 'pointer', zIndex: 10 }}
+              onClick={(e) => { e.stopPropagation(); setLightbox((lightbox + 1) % photos.length); }}
+            >
+              <ChevronRight size={48} />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

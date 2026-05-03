@@ -1,5 +1,7 @@
 // src/components/WorldElectionMap.tsx
 import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const COUNTRIES = [
   { name:"India", lat:20.59, lng:78.96, flag:"🇮🇳", status:"concluded", year:2024, leader:"Narendra Modi", title:"Prime Minister", party:"BJP", voters:"969 Million", turnout:"66.3%" },
@@ -14,77 +16,77 @@ const COUNTRIES = [
 
 export default function WorldElectionMap() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
   const [selected, setSelected] = useState<typeof COUNTRIES[0] | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
-    const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!mapRef.current || mapInstance.current) return;
 
-    // Remove any existing Google Maps scripts
-    const existing = document.getElementById('gmaps-script');
-    if (existing) existing.remove();
-
-    // Inject fresh script
-    const script = document.createElement('script');
-    script.id = 'gmaps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&v=beta&libraries=marker`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setMapLoaded(true);
-    script.onerror = () => console.error('Google Maps failed to load');
-    document.head.appendChild(script);
-
-    return () => { script.remove(); };
-  }, []);
-
-  useEffect(() => {
-    if (!mapLoaded || !mapRef.current) return;
-
-    const map = new (window as any).google.maps.Map(mapRef.current, {
-      center: { lat: 20, lng: 0 },
+    // Initialize Leaflet Map
+    const map = L.map(mapRef.current, {
+      center: [20, 0],
       zoom: 2,
-      mapTypeId: 'satellite',
-      disableDefaultUI: true,
-      mapId: 'DEMO_MAP_ID',
-      backgroundColor: '#05050A',
-    });
+      zoomControl: false,
+      attributionControl: false,
+      backgroundColor: '#05050A'
+    } as any);
 
-    // Auto spin
+    mapInstance.current = map;
+
+    // Add High-Quality Satellite Tiles (Esri World Imagery)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Auto-spin simulation
     let lng = 0;
     let spinning = true;
     const spin = () => {
       if (!spinning) return;
       lng = (lng + 0.3) % 360;
-      map.setCenter({ lat: 20, lng: lng - 180 });
+      map.setView([20, lng - 180], map.getZoom(), { animate: false });
       requestAnimationFrame(spin);
     };
-    requestAnimationFrame(spin);
-    map.addListener('dragstart', () => { spinning = false; });
+    // Note: Manual panning in Leaflet with setView is heavy, so we only spin if map is at zoom 2
+    const spinRequest = requestAnimationFrame(spin);
 
-    // Add markers
+    map.on('mousedown', () => { spinning = false; });
+
+    // Add custom markers
     COUNTRIES.forEach((c) => {
-      const el = document.createElement('div');
-      el.style.cssText = `
-        width:40px; height:40px; border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        font-size:22px; cursor:pointer;
-        border:2px solid ${c.status==='ongoing'?'#f59e0b':'#22c55e'};
-        background:${c.status==='ongoing'?'rgba(245,158,11,0.3)':'rgba(34,197,94,0.3)'};
-        box-shadow:0 0 12px ${c.status==='ongoing'?'#f59e0b':'#22c55e'};
-      `;
-      el.textContent = c.flag;
-      el.addEventListener('click', () => {
+      const customIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+          <div style="
+            width:40px; height:40px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:22px; cursor:pointer;
+            border:2px solid ${c.status==='ongoing'?'#f59e0b':'#22c55e'};
+            background:${c.status==='ongoing'?'rgba(245,158,11,0.3)':'rgba(34,197,94,0.3)'};
+            box-shadow:0 0 12px ${c.status==='ongoing'?'#f59e0b':'#22c55e'};
+          ">
+            ${c.flag}
+          </div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+
+      const marker = L.marker([c.lat, c.lng], { icon: customIcon }).addTo(map);
+
+      marker.on('click', () => {
         spinning = false;
         setSelected(c);
-        map.panTo({ lat: c.lat, lng: c.lng });
-        map.setZoom(4);
-      });
-
-      new (window as any).google.maps.marker.AdvancedMarkerElement({
-        map, position: { lat: c.lat, lng: c.lng }, content: el,
+        map.flyTo([c.lat, c.lng], 4);
       });
     });
-  }, [mapLoaded]);
+
+    return () => {
+      cancelAnimationFrame(spinRequest);
+      map.remove();
+      mapInstance.current = null;
+    };
+  }, []);
 
   return (
     <section style={{ background:'#05050A', padding:'80px 16px' }}>
@@ -107,7 +109,6 @@ export default function WorldElectionMap() {
       </div>
 
       <div style={{ position:'relative', maxWidth:'1100px', margin:'0 auto' }}>
-        {/* MAP DIV — explicit pixel height, no Tailwind */}
         <div
           ref={mapRef}
           style={{
@@ -117,26 +118,18 @@ export default function WorldElectionMap() {
             overflow: 'hidden',
             border: '1px solid rgba(255,255,255,0.1)',
             display: 'block',
+            background: '#0D0D1A'
           }}
         />
-
-        {/* Loading state */}
-        {!mapLoaded && (
-          <div style={{
-            position:'absolute', inset:0, background:'#0D0D1A',
-            borderRadius:'16px', display:'flex', alignItems:'center', justifyContent:'center',
-          }}>
-            <p style={{ color:'#6B7280' }}>Loading map...</p>
-          </div>
-        )}
 
         {/* Info panel */}
         {selected && (
           <div style={{
             position:'absolute', top:'16px', right:'16px', width:'280px',
             background:'rgba(13,13,26,0.96)', border:'1px solid rgba(37,99,235,0.4)',
-            borderRadius:'16px', padding:'20px', zIndex:10,
+            borderRadius:'16px', padding:'20px', zIndex:1000,
             backdropFilter:'blur(20px)',
+            color: '#F0EEE4'
           }}>
             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'16px' }}>
               <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
@@ -164,7 +157,7 @@ export default function WorldElectionMap() {
             ].map(([label, value, color]) => (
               <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
                 <span style={{ color:'#6B7280', fontSize:'12px' }}>{label}</span>
-                <span style={{ color, fontSize:'13px', fontWeight:'600' }}>{value}</span>
+                <span style={{ color: color as string, fontSize:'13px', fontWeight:'600' }}>{value}</span>
               </div>
             ))}
           </div>
